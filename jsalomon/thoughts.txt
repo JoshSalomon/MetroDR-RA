@@ -1,0 +1,11 @@
+
+look in https://docs.ceph.com/en/latest/rados/operations/crush-map-edits/ for details
+##get hosts out of crushtool:
+ceph osd getcrushmap -o {compiled-crushmap-filename}
+
+
+##get host list
+crushtool -d <filename>  | grep ^host | sed "s/host //" | sed "s/ {//"
+
+# find osds 
+

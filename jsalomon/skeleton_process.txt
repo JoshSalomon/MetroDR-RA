@@ -1,0 +1,16 @@
+
+create a backup script
+##
+## ask josh about changing crush hierarchy under IOs
+##
+create a restore script
+
+## get all hosts into files
+ceph osd crush tree | grep host | awk '{print $4}'
+
+read hosts+AZs from file, and create a new crush map file
+let the admin look at this
+compile the crush map and apply - on error do a restore.
+
+
+
