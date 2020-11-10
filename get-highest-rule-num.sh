@@ -135,6 +135,8 @@ check_params
 max_rule=$(get_max_rule)
 (($verbose == 1)) && echo "max_rule="$max_rule
 
+error=0
+
 if [ -z "$az3" ]; then
     echo "==> 2 AZs - not implemented yet"
 else
@@ -145,8 +147,20 @@ else
         ((max_rule++))
         i2=$(( (i+1) % 3 ))
         i3=$(( (i+2) % 3 ))
-        create_3azs_rule $max_rule ${azs[$i]} ${azs[$i2]} ${azs[$i3]} > ${azs[$i]}$rule_suffix
+        ofile=${azs[$i]}$rule_suffix
+        create_3azs_rule $max_rule ${azs[$i]} ${azs[$i2]} ${azs[$i3]} > $ofile
+        if [ $? -eq 0 ]; then
+            echo "Rule file $ofile created successfully." 
+        else
+            echo "*ERROR*: Failed writing $ofile, error code is $?"
+            error=1
+        fi
     done
+fi
+
+if [ $error -eq 1 ]; then 
+    echo "Errors found, exiting"
+    exit 1
 fi
 ##
 # step 1 - Set the crush map correctly
