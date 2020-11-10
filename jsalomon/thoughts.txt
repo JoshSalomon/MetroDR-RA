@@ -9,3 +9,69 @@ crushtool -d <filename>  | grep ^host | sed "s/host //" | sed "s/ {//"
 
 # find osds 
 
+==========================================
+ID  CLASS WEIGHT  TYPE NAME                  STATUS REWEIGHT PRI-AFF 
+ -1       3.63846 root default                                       
+ -3       0.72769     host refarch-r730xd-01                         
+  0   ssd 0.72769         osd.0                  up  1.00000 1.00000 
+ -5       0.72769     host refarch-r730xd-02                         
+  1   ssd 0.72769         osd.1                  up  1.00000 1.00000 
+ -7       0.72769     host refarch-r730xd-03                         
+  2   ssd 0.72769         osd.2                  up  1.00000 1.00000 
+ -9       0.72769     host refarch-r730xd-04                         
+  3   ssd 0.72769         osd.3                  up  1.00000 1.00000 
+-11       0.72769     host refarch-r730xd-05                         
+  4   ssd 0.72769         osd.4                  up  1.00000 1.00000 
+[root@refarch-r220-04 ~]# 
+
+==========================================
+
+## Get list of pool numbers and pool names
+
+[root@refarch-r220-04 ~]# ceph osd pool ls detail | awk '{ if ($1 == "pool") {print $2": "$3}}' | sed "s/'//g"
+1: cephfs_data
+2: cephfs_metadata
+3: .rgw.root
+4: default.rgw.control
+5: default.rgw.meta
+6: default.rgw.log
+7: rbd
+8: default.rgw.buckets.index
+9: default.rgw.buckets.data
+[root@refarch-r220-04 ~]# 
+
+======================================================
+
+## Get the number of a specific pool (in this case rbd)
+[root@refarch-r220-04 ~]# ceph osd pool ls detail | awk '{ if ($1 == "pool") {print $2" "$3}}' | grep "'rbd'" | awk '{ print $1}'
+7
+[root@refarch-r220-04 ~]# 
+
+[root@refarch-r220-04 ~]# export POOL=rbd
+[root@refarch-r220-04 ~]# ceph osd pool ls detail | awk '{ if ($1 == "pool") {print $2" "$3}}' | grep "'$POOL'" | awk '{ print $1}'
+7
+[root@refarch-r220-04 ~]# 
+
+======================================================
+
+ceph pg dump pgs_brief | grep "^7." |awk '{ print $3 }' | sed "s/\]//" | sed "s/\[//" | sed "s/,/ /"  | awk '{ print $1 }'
+or 
+ceph pg dump pgs_brief | grep "^7." |awk '{ print $3 }' | awk ' BEGIN { FS="[" } ; { print $2 }' | awk ' BEGIN { FS=","} ; {print $1} '
+or
+ceph pg dump pgs_brief | grep "^7." |awk '{ print $3 }' | sed "s/\[//" | awk 'BEGIN { FS="," } ; { print $1 }'
+or 
+ceph pg dump pgs_brief | grep "^7." |awk '{ print $3 }' | sed "s/[\[,]/ /g" | awk '{ print $1 }'
+or 
+ceph pg dump pgs_brief 2>/dev/null | awk '{ if ($1 ~ /^7\./) { print  $3 }}' | sed "s/[\[,]/ /g" | awk '{ print $1 }'
+or
+ceph pg dump pgs_brief 2>/dev/null | awk '{ if ($1 ~ /^7\./) { split($3, a, "[\\[\\],]", sep); print  a[2]}}'
+or 
+ceph pg dump pgs_brief | grep "^7." | awk '{ split($3, a, "[\\[\\],]", sep); print  a[2]}'
+
+##
+# get pool num from pool names
+
+ceph osd pool ls detail | sed "s/'//g" | awk -v PN="rbd" '{ if ($1 == "pool" && $3 == PN) {print $2}}'
+or 
+ceph osd pool stats rbd | awk -v PN="rbd" '{ if ($1 == "pool" && $2 == PN) {print $4}}'
+
