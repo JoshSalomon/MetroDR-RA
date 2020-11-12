@@ -116,7 +116,6 @@ function build_crush_tree() {
             crush_parents[$ch_id]=$id
         done
     done    
-    
 }
 
 if [ -z "$1" ]; then
