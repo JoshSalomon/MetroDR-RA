@@ -75,3 +75,38 @@ ceph osd pool ls detail | sed "s/'//g" | awk -v PN="rbd" '{ if ($1 == "pool" && 
 or 
 ceph osd pool stats rbd | awk -v PN="rbd" '{ if ($1 == "pool" && $2 == PN) {print $4}}'
 
+=============================
+
+#
+# extract crush tree as json
+ceph osd crush tree -f json-pretty
+
+[root@refarch-r220-04 ~]# jq .nodes[0].children crush-tree-plain.json 
+[
+  -11,
+  -9,
+  -7,
+  -5,
+  -3
+]
+[root@refarch-r220-04 ~]# jq .nodes[0].children[0] crush-tree-plain.json 
+-11
+[root@refarch-r220-04 ~]# jq .nodes[0].children[4] crush-tree-plain.json 
+-3
+[root@refarch-r220-04 ~]# jq .nodes[0].children[5] crush-tree-plain.json 
+null
+[root@refarch-r220-04 ~]# echo $?
+0
+
+#
+# get number of children for a nodes
+#
+
+cat crush-tree-plain.json | jq ".nodes[0].children | length "
+
+#
+# Get a value of a child
+#
+cat crush-tree-plain.json | jq .nodes[0].children[0]
+
+
