@@ -12,20 +12,32 @@
 
 . $(dirname "$0")/crush-utils.sh
 
+debug=0
+verbose=0
+input_file=""
+
 function usage() {
     #
     echo 
-    echo "Usage: $0 pool_name"
+    if [[ $debug == 0 ]]; then
+       echo "Usage: $0 pool_name"
+    else
+       echo "Usage: $0 pool_name {-v} {-x} {-d}"
+    fi
     echo
     echo "Check if pool_name has read affinity (all its primary OSDs are from the same datacenter"
     echo "or availability zone)"
+    if [[ $debug > 0 ]]; then
+        echo "  -v  Debug: Turn verbosity on"
+        echo "  -x  Debug: Print command traces before executing command"
+        echo "  -d  Debug: Print shell input lines as they are read"
+    fi
     echo
     exit 1
 }
 
 
 function has_read_affinity() {
-    echo "" > /dev/null
     ##local prim_count=0
     local failure_domain=""
     IFS=':' read -ra prim_array <<< "$primaries"
@@ -34,34 +46,72 @@ function has_read_affinity() {
         ##((prim_count++))
         ##echo "Checking primary $p"
         local node_id=$p
-        while [ "${crush_node_type[$node_id]}" != "$failure_domain_type"  ]; do
+        while [[ "${crush_node_type[$node_id]}" != "$failure_domain_type"  ]]; do
             node_id=${crush_parents[$node_id]}
         done
         
-        if [ -z "$failure_domain" ]; then
+        if [[ "$failure_domain" == "" ]]; then
             failure_domain=${crush_node_name[$node_id]}
-        elif [ $failure_domain !=  ${crush_node_name[$node_id]} ]; then
-            echo -e "\nPool $pool_name does not have read affinity\n"
-            return
+        elif [[ $failure_domain !=  ${crush_node_name[$node_id]} ]]; then
+            echo -e "\n => Pool $pool_name does not have read affinity\n";
+            return 0
         fi
 
         ##echo "Failure domain for $p is ${crush_node_name[$node_id]}"
     done
-    echo -e "\nPool $pool_name has read affinity to failure domain $failure_domain\n"    
+    echo -e "\n => Pool $pool_name has read affinity to failure domain $failure_domain\n";    
+    return 1
     ##echo " == Iterated over $prim_count PGs"
 }
 
+if [[ "$1" = "debug" ]]; then
+    debug=1
+    shift 1
+fi
 
-if [ -z "$1" ]; then
+
+if [[ -z "$1" ]]; then
     usage
 fi
 
 pool_name=$1
+shift 1
+
+if [[ -n "$1" && "${1:0:1}" != "-" ]]; then
+    input_file=$1
+    shift 1
+fi
+
+if [[ $debug > 0 ]]; then
+    while getopts "vxdh" o; do
+        case "${o}" in
+            v)
+                verbose=1
+                echo "Running in verbose mode" 
+                ;;
+            x)
+                set -x
+                echo "Expansion mode on"
+                ;;
+            d)
+                set -v
+                echo "Shell verbose mode on"
+                ;;
+            h)  usage 
+                ;;
+            *)
+                echo "*ERROR*: Urecognized parameter "${o}
+                usage
+                ;;
+        esac
+    done
+fi
+
 ###
 # Check that the pool exists
 #
 ceph osd pool get $pool_name size &> /dev/null
-if [ $? -ne 0 ]; then
+if [[ $? != 0 ]]; then
     echo
     echo "*ERROR*: Pool $pool_name does not exist"
     usage
@@ -69,14 +119,14 @@ fi
 
 echo " == Checking affinity for pool $pool_name"
 
-if [ -z "$2" ]; then
+if [[ "$input_file" == "" ]]; then
     crush_tree_json=$(ceph osd crush tree -f json)
 else
-    echo "debug mode"
-    if [ -r $2 ]; then
-        crush_tree_json=$(cat $2)
+    echo " == debug mode - reading crush info from file $input_file"
+    if [ -r $input_file ]; then
+        crush_tree_json=$(cat $input_file)
     else 
-        echo "Cant read $2"  
+        echo "*Error*: Cant read $input_file"  
         exit      
     fi
 fi
@@ -84,7 +134,7 @@ fi
 build_crush_tree $crush_tree_json
 find_failure_domains $crush_tree_json
 
-echo "Failure domain type is $failure_domain_type"
+(($verbose == 1)) && echo " == Failure domain type is $failure_domain_type"
 
 ##debug
 ##for i in "${!crush_node_name[@]}"; do
@@ -93,7 +143,7 @@ echo "Failure domain type is $failure_domain_type"
 
 pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $2 == PN) {print $4}}')
 
-echo " == Pool num = $pool_num"
+(($verbose == 1)) && echo " == Pool num = $pool_num"
 
 ##
 # Get the list of primary OSDs for this pool, string of OSD IDs separated by ':' sign
@@ -110,5 +160,4 @@ primaries=$(echo $primaries | sed "s/ /:/g")
 ##echo "short primaries list: $primaries"
 
 has_read_affinity
-
 

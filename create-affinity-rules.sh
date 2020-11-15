@@ -8,7 +8,7 @@ rule_suffix=-affinity.rule
 debug=0
 opts="1:2:3:h"
 dbg_opts="vxd"
-
+base_dir="."
 
 function get_max_rule()
 {
@@ -22,7 +22,7 @@ function get_max_rule()
     #TODO: add here the ceph osd crush rule dump command - 'ceph osd crush rule dump | grep "rule_id"
     # it is replaces with a cat command for simplicity and tests
        
-    cat  $template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
+    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
 }
 
 function usage() {
@@ -36,7 +36,7 @@ function usage() {
 ###Del        echo
 ###Del    fi
     echo 
-    if [ $debug == 0 ]; then
+    if [[ $debug == 0 ]]; then
         echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class}"
     else
         echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-v} {-x} {-d}"
@@ -44,7 +44,7 @@ function usage() {
     echo "  -1  Name of first az class (for the crush rules)"
     echo "  -2  Name of second az class (for the crush rules)"
     echo "  -3  Name of thirs az class (for the crush rules) - optional"
-    if [ $debug -gt 0 ]; then
+    if [[ $debug > 0 ]]; then
         echo "  -v  Debug: Turn verbosity on"
         echo "  -x  Debug: Print command traces before executing command"
         echo "  -d  Debug: Print shell input lines as they are read"
@@ -66,12 +66,12 @@ function check_params() {
         (($verbose == 1)) && echo "az3-class="$az3
     fi
     
-    if [ -z "${az1}" ] || [ -z "${az2}" ]; then
+    if [[ "${az1}" == "" || "${az2}" = "" ]]; then
         echo "*ERROR*: az1-class and az2-class are mandatory parameters"
         usage
     fi
 
-    if [ "$az1" = "$az2" ] || [ "$az1" = "$az3" ] || [ "$az2" = "$az3" ]; then
+    if [[ "$az1" == "$az2" || "$az1" == "$az3"  ||  "$az2" == "$az3" ]]; then
         echo "*ERROR*: az-class names should be unique"
         usage
     fi
@@ -82,11 +82,13 @@ function create_3azs_rule() {
     local az1=$2
     local az2=$3
     local az3=$4
-    cat $template_dir/$template_3azs | sed "s/<<AZ1>>/$az1/" | sed "s/<<AZ2>>/$az2/" | sed "s/<<AZ3>>/$az3/" | sed "s/<<ID>>/$id/"
+    cat $base_dir/$template_dir/$template_3azs | sed "s/<<AZ1>>/$az1/" | sed "s/<<AZ2>>/$az2/" | sed "s/<<AZ3>>/$az3/" | sed "s/<<ID>>/$id/"
     
 }
 
-if [ "$1" = "debug" ]; then
+base_dir=$(dirname "$0")
+
+if [[ "$1" == "debug" ]]; then
     opts=$opts$dbg_opts
     debug=1
     shift 1
@@ -137,7 +139,7 @@ max_rule=$(get_max_rule)
 
 error=0
 
-if [ -z "$az3" ]; then
+if [[ "$az3" == "" ]]; then
     echo "==> 2 AZs - not implemented yet"
 else
     (($verbose == 1)) && echo "==> 3 AZs"
@@ -149,7 +151,7 @@ else
         i3=$(( (i+2) % 3 ))
         ofile=${azs[$i]}$rule_suffix
         create_3azs_rule $max_rule ${azs[$i]} ${azs[$i2]} ${azs[$i3]} > $ofile
-        if [ $? -eq 0 ]; then
+        if [[ $? == 0 ]]; then
             echo "Rule file $ofile created successfully." 
         else
             echo "*ERROR*: Failed writing $ofile, error code is $?"
@@ -158,7 +160,7 @@ else
     done
 fi
 
-if [ $error -eq 1 ]; then 
+if [[ $error == 1 ]]; then 
     echo "Errors found, exiting"
     exit 1
 fi
