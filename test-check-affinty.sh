@@ -2,6 +2,7 @@
 #
 # test suite for the script check-pool-affinity.shell
 #
+data_dir=jsalomon
 
 ntests=1
 read -n 1 -s -r -p "$ntests. Missing patameters"
@@ -18,11 +19,11 @@ echo ""
 
 read -n 1 -s -r -p "$ntests. Test on manipulated json file"
 echo ""
-(( ntests++ )) && ./check-pool-affinity.sh rbd jsalomon/crush-tree-plain.json
+(( ntests++ )) && ./check-pool-affinity.sh rbd $data_dir/crush-tree-plain.json
 
 read -n 1 -s -r -p "$ntests. Test on original json file"
 echo ""
-(( ntests++ )) && ./check-pool-affinity.sh rbd jsalomon/crush-tree-plain.json.original
+(( ntests++ )) && ./check-pool-affinity.sh rbd $data_dir/crush-tree-plain.json.original
 
 
 read -n 1 -s -r -p "$ntests. Test on non exiting json file"
@@ -33,7 +34,7 @@ if [[ "$USER" != "root" ]]; then
     read -n 1 -s -r -p "$ntests. Test on non readable json file (applicable to non-root users only)"
     echo ""
     temp_file=$(mktemp)
-    cp  jsalomon/crush-tree-plain.json $temp_file ; chmod -r $temp_file
+    cp  $data_dir/crush-tree-plain.json $temp_file ; chmod -r $temp_file
     ls -a $temp_file
     (( ntests++ )) && ./check-pool-affinity.sh rbd $temp_file
     chmod +r $temp_file ; rm $temp_file
