@@ -109,4 +109,10 @@ cat crush-tree-plain.json | jq ".nodes[0].children | length "
 #
 cat crush-tree-plain.json | jq .nodes[0].children[0]
 
+#
+# Include a script file (
+#
+. $(dirname "$0")/<b>.sh
+
+
 
