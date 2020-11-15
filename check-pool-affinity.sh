@@ -53,13 +53,13 @@ function has_read_affinity() {
         if [[ "$failure_domain" == "" ]]; then
             failure_domain=${crush_node_name[$node_id]}
         elif [[ $failure_domain !=  ${crush_node_name[$node_id]} ]]; then
-            echo -e "\n => Pool $pool_name does not have read affinity\n";
+            echo -e "\n$red_text =>$reset_text Pool $pool_name does not have read affinity\n";
             return 0
         fi
 
         ##echo "Failure domain for $p is ${crush_node_name[$node_id]}"
     done
-    echo -e "\n => Pool $pool_name has read affinity to failure domain $failure_domain\n";    
+    echo -e "\n$green_text =>$reset_text Pool $pool_name has read affinity to failure domain $failure_domain\n";    
     return 1
     ##echo " == Iterated over $prim_count PGs"
 }
@@ -71,6 +71,7 @@ fi
 
 
 if [[ -z "$1" ]]; then
+    echo_error "Missing mandatory parameter"
     usage
 fi
 
@@ -100,7 +101,7 @@ if [[ $debug > 0 ]]; then
             h)  usage 
                 ;;
             *)
-                echo "*ERROR*: Urecognized parameter "${o}
+                echo_error "Urecognized parameter "${o}
                 usage
                 ;;
         esac
@@ -113,7 +114,7 @@ fi
 ceph osd pool get $pool_name size &> /dev/null
 if [[ $? != 0 ]]; then
     echo
-    echo "*ERROR*: Pool $pool_name does not exist"
+    echo_error "Pool $pool_name does not exist"
     usage
 fi
 
@@ -126,7 +127,7 @@ else
     if [ -r $input_file ]; then
         crush_tree_json=$(cat $input_file)
     else 
-        echo "*Error*: Cant read $input_file"  
+        echo_error "Cant read $input_file"  
         exit      
     fi
 fi

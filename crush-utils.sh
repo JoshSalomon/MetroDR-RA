@@ -14,6 +14,18 @@ failure_domain_type=""
 failure_domain_num=0
 declare -A failure_domains
 
+##
+# Common efinitions for nicer outout
+##
+red_text="\e[1;31m"
+green_text="\e[1;32m"
+blue_text="\e[1;34m"
+reset_text="\e[0m"
+
+function echo_error() {
+    echo -e "$red_text*Error*: $1$reset_text"
+}
+
 function find_failure_domains()
 {
     # 
@@ -23,7 +35,7 @@ function find_failure_domains()
     # "ceph osd crush tree -f json"
     #
     if [ -z "$1" ]; then
-        echo "*ERROR*: No paremeter passed to $0"
+        echo_error "No paremeter passed to $0"
         exit 0
     fi
     local node_idx=0
@@ -45,7 +57,7 @@ function find_failure_domains()
         elif [ $n_children -eq 1 ]; then
             node_idx=${node_indices[$first_child]}
         else 
-            echo "*ERROR*: Did not find a failure domain in tree. Is this a production-like system?"
+            echo_error "Did not find a failure domain in tree. Is this a production-like system?"
             exit 0
         fi
     done
