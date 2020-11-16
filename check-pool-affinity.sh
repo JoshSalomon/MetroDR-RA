@@ -20,9 +20,9 @@ function usage() {
     #
     echo 
     if [[ $debug == 0 ]]; then
-       echo "Usage: $0 pool_name"
+       echo "Usage: $(basename "$0") pool_name"
     else
-       echo "Usage: $0 pool_name {-v} {-x} {-d}"
+       echo "Usage: $(basename "$0") {-v} {-x} {-d}"
     fi
     echo
     echo "Check if pool_name has read affinity (all its primary OSDs are from the same datacenter"
@@ -71,6 +71,7 @@ fi
 
 
 if [[ -z "$1" ]]; then
+    echo ""
     echo_error "Missing mandatory parameter"
     usage
 fi

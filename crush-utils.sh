@@ -23,7 +23,7 @@ blue_text="\e[1;34m"
 reset_text="\e[0m"
 
 function echo_error() {
-    echo -e "$red_text*Error*: $1$reset_text"
+    echo -e "$red_text*Error*: $reset_text$1"
 }
 
 function find_failure_domains()
