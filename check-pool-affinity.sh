@@ -10,7 +10,10 @@
 # extra development effort.
 #####
 
-. $(dirname "$0")/crush-utils.sh
+base_dir=$(dirname "$0")
+data_dir=$base_dir/data
+
+. $data_dir/crush-utils.sh
 
 debug=0
 verbose=0
@@ -63,6 +66,10 @@ function has_read_affinity() {
     return 1
     ##echo " == Iterated over $prim_count PGs"
 }
+
+###
+# Start of script execution (main if you like)
+###
 
 if [[ "$1" = "debug" ]]; then
     debug=1

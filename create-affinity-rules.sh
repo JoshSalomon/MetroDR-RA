@@ -1,10 +1,16 @@
 #!/bin/bash
 
+base_dir=$(dirname "$0")
+data_dir=$base_dir/data
+
+. $data_dir/crush-utils.sh
+
 verbose=0
-template_dir=jsalomon
+template_dir=data
 template_3azs=3az-template-rule.txt
 template_2azs=2az-template-rule.txt
 rule_suffix=-affinity.rule
+
 debug=0
 opts="1:2:3:h"
 dbg_opts="vxd"
@@ -67,12 +73,13 @@ function check_params() {
     fi
     
     if [[ "${az1}" == "" || "${az2}" = "" ]]; then
-        echo "*ERROR*: az1-class and az2-class are mandatory parameters"
+    
+        echo_error "az1-class and az2-class are mandatory parameters"
         usage
     fi
 
     if [[ "$az1" == "$az2" || "$az1" == "$az3"  ||  "$az2" == "$az3" ]]; then
-        echo "*ERROR*: az-class names should be unique"
+        echo_error "az-class names should be unique"
         usage
     fi
 }
@@ -86,6 +93,9 @@ function create_3azs_rule() {
     
 }
 
+###
+# Start of script execution (main if you like)
+###
 base_dir=$(dirname "$0")
 
 if [[ "$1" == "debug" ]]; then
@@ -123,7 +133,7 @@ while getopts $opts o; do
         h)  usage nosapce
             ;;
         *)
-            echo "*ERROR*: Urecognized parameter "${o}
+            echo_error "Urecognized parameter "${o}
             usage
             ;;
     esac
@@ -140,7 +150,7 @@ max_rule=$(get_max_rule)
 error=0
 
 if [[ "$az3" == "" ]]; then
-    echo "==> 2 AZs - not implemented yet"
+    echo_error "==> 2 AZs - not implemented yet"
 else
     (($verbose == 1)) && echo "==> 3 AZs"
     azs=($az1 $az2 $az3)
@@ -154,7 +164,7 @@ else
         if [[ $? == 0 ]]; then
             echo "Rule file $ofile created successfully." 
         else
-            echo "*ERROR*: Failed writing $ofile, error code is $?"
+            echo_error "Failed writing $ofile, error code is $?"
             error=1
         fi
     done

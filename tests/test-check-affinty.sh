@@ -3,7 +3,7 @@
 # test suite for the script check-pool-affinity.shell
 #
 base_dir=$(dirname "$0")/..
-data_dir=$base_dir/jsalomon
+data_dir=$base_dir/data
 
 blue_text="\e[1;34m"
 reset_text="\e[0m"
