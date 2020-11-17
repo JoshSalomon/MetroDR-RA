@@ -159,7 +159,7 @@ else
         ((max_rule++))
         i2=$(( (i+1) % 3 ))
         i3=$(( (i+2) % 3 ))
-        ofile=${azs[$i]}$rule_suffix
+        ofile=$base_dir/${azs[$i]}$rule_suffix
         create_3azs_rule $max_rule ${azs[$i]} ${azs[$i2]} ${azs[$i3]} > $ofile
         if [[ $? == 0 ]]; then
             echo "Rule file $ofile created successfully." 

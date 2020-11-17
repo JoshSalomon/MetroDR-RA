@@ -1,9 +1,10 @@
 #!/bin/bash
 #
-# test suite for the script check-pool-affinity.shell
+# test suite for the script check-pool-affinity.sh
 #
 base_dir=$(dirname "$0")/..
 data_dir=$base_dir/data
+tested_script=check-pool-affinity.sh
 
 blue_text="\e[1;34m"
 reset_text="\e[0m"
@@ -13,7 +14,7 @@ run_one_by_one=0
 function usage() {
     echo ""
     echo "Usage: $(basename "$0") [one]"
-    echo "       Runs a series of tests for the $(basename "$0") script."
+    echo "       Runs a series of tests for the $tested_script script."
     echo "optional argumaents:"
     echo "  one    Run the tests one by one (need to hit key after each test name to execute it)"
     echo ""
@@ -41,23 +42,23 @@ fi
 
 ntests=1
 echo_test_name "Missing patameters"
-run_test "check-pool-affinity.sh"
+run_test "$tested_script"
 
 (( ntests++ )) && echo_test_name "Wrong pool name"
-run_test "check-pool-affinity.sh NonExistingPool"
+run_test "$tested_script NonExistingPool"
 
 
 (( ntests++ )) && echo_test_name "Simple tests on rbd"
-run_test "check-pool-affinity.sh rbd"
+run_test "$tested_script rbd"
 
 (( ntests++ )) && echo_test_name "Test on manipulated json file"
-run_test "check-pool-affinity.sh rbd $data_dir/crush-tree-plain.json"
+run_test "$tested_script rbd $data_dir/crush-tree-plain.json"
 
 (( ntests++ )) && echo_test_name "Test on original json file"
-run_test "check-pool-affinity.sh rbd $data_dir/crush-tree-plain.json.original"
+run_test "$tested_script rbd $data_dir/crush-tree-plain.json.original"
 
 (( ntests++ )) && echo_test_name "Test on non exiting json file"
-run_test "check-pool-affinity.sh rbd NonExistingFile"
+run_test "$tested_script rbd NonExistingFile"
 
 if [[ "$USER" != "root" ]]; then
     (( ntests++ )) && echo_test_name "Test on non readable json file (applicable to non-root users only)"
@@ -65,7 +66,7 @@ if [[ "$USER" != "root" ]]; then
     temp_file=$(mktemp)
     cp  $data_dir/crush-tree-plain.json $temp_file ; chmod -r $temp_file
     ls -a $temp_file
-    run_test "check-pool-affinity.sh rbd $temp_file"
+    run_test "$tested_script rbd $temp_file"
     chmod +r $temp_file ; rm $temp_file
 fi
 

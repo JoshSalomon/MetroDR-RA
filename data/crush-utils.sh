@@ -5,10 +5,10 @@
 # for testing later whether a pool has read affinity (in addition to the type of the failure domain
 # level).
 #
-declare -A crush_parents
-declare -A crush_node_type
-declare -A crush_node_name
-declare -A node_indices
+declare -A crush_parents_by_id
+declare -A crush_node_type_by_id
+declare -A crush_node_name_by_id
+declare -A node_indices_by_id
 
 failure_domain_type=""
 failure_domain_num=0
@@ -46,16 +46,16 @@ function find_failure_domains()
         first_child=$(echo $1 | jq .nodes[$node_idx].children[0])
         if [ $n_children -gt 1 ]; then
             ## echo "node $node_id - below is failure domain, such as $first_child"
-            failure_domain_type=${crush_node_type[$first_child]}
+            failure_domain_type=${crush_node_type_by_id[$first_child]}
             ## echo "Failure domain type is $failure_domain_type"
             ##failure_domain_num=$n_children
             ##for (( i = 0 ; i < )); do
             ##    local cur_child_id=$(echo $1 | jq .nodes[$node_idx].children[$i])
-            ##    failure_domains[${crush_node_name[$cur_child_id]}]="1"
+            ##    failure_domains[${crush_node_name_by_id[$cur_child_id]}]="1"
             ##done
             break
         elif [ $n_children -eq 1 ]; then
-            node_idx=${node_indices[$first_child]}
+            node_idx=${node_indices_by_id[$first_child]}
         else 
             echo_error "Did not find a failure domain in tree. Is this a production-like system?"
             exit 0
@@ -66,7 +66,7 @@ function find_failure_domains()
 function build_crush_tree() {
     ## 
     # This function builds the crush tree information in the 3 arrays
-    # crush_parents, crush_node_type and crush_node_name
+    # crush_parents_by_id, crush_node_type_by_id and crush_node_name_by_id
     ##
     local num_nodes=$(echo $1 | jq ".nodes | length")
 ##    echo " found $num_nodes nodes in the crush tree"
@@ -82,14 +82,14 @@ function build_crush_tree() {
         local type=$(echo $node_info | jq .type | sed 's/"//g')
         local name=$(echo $node_info | jq .name | sed 's/"//g')
         ##echo "node $id: name is $name, type is $type, index is $i"
-        crush_node_name[$id]=$name
-        crush_node_type[$id]=$type
-        node_indices[$id]=$i
+        crush_node_name_by_id[$id]=$name
+        crush_node_type_by_id[$id]=$type
+        node_indices_by_id[$id]=$i
         for (( child = 0 ; child < $n_children ; child++ ))
         do
             local ch_id=$(echo $node_info | jq .children[$child])
  ##           echo "Parent of $ch_id is $id"  
-            crush_parents[$ch_id]=$id
+            crush_parents_by_id[$ch_id]=$id
         done
     done    
 }

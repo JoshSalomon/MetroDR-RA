@@ -49,18 +49,18 @@ function has_read_affinity() {
         ##((prim_count++))
         ##echo "Checking primary $p"
         local node_id=$p
-        while [[ "${crush_node_type[$node_id]}" != "$failure_domain_type"  ]]; do
-            node_id=${crush_parents[$node_id]}
+        while [[ "${crush_node_type_by_id[$node_id]}" != "$failure_domain_type"  ]]; do
+            node_id=${crush_parents_by_id[$node_id]}
         done
         
         if [[ "$failure_domain" == "" ]]; then
-            failure_domain=${crush_node_name[$node_id]}
-        elif [[ $failure_domain !=  ${crush_node_name[$node_id]} ]]; then
+            failure_domain=${crush_node_name_by_id[$node_id]}
+        elif [[ $failure_domain !=  ${crush_node_name_by_id[$node_id]} ]]; then
             echo -e "\n$red_text =>$reset_text Pool $pool_name does not have read affinity\n";
             return 0
         fi
 
-        ##echo "Failure domain for $p is ${crush_node_name[$node_id]}"
+        ##echo "Failure domain for $p is ${crush_node_name_by_id[$node_id]}"
     done
     echo -e "\n$green_text =>$reset_text Pool $pool_name has read affinity to failure domain $failure_domain\n";    
     return 1
@@ -146,8 +146,8 @@ find_failure_domains $crush_tree_json
 (($verbose == 1)) && echo " == Failure domain type is $failure_domain_type"
 
 ##debug
-##for i in "${!crush_node_name[@]}"; do
-##    echo "Node $i, name ${crush_node_name[$i]}, type ${crush_node_type[$i]}, parent ${crush_parents[$i]}" 
+##for i in "${!crush_node_name_by_id[@]}"; do
+##    echo "Node $i, name ${crush_node_name_by_id[$i]}, type ${crush_node_type_by_id[$i]}, parent ${crush_parents_by_id[$i]}" 
 ##done
 
 pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $2 == PN) {print $4}}')
