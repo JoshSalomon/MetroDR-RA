@@ -51,6 +51,10 @@ function has_read_affinity() {
         ##echo "Checking primary $p"
         local node_id=$p
         while [[ "${crush_node_type_by_id[$node_id]}" != "$failure_domain_type"  ]]; do
+            if [[ "${crush_node_type_by_id[$node_id]}" != "root"  ]]; then
+                echo_error "Failed to analyze crush tree for pool $pool_name"
+                return 1
+            fi
             node_id=${crush_parents_by_id[$node_id]}
         done
         
