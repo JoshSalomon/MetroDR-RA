@@ -54,6 +54,9 @@ run_test "$tested_script rbd"
 (( ntests++ )) && echo_test_name "Test on manipulated json file"
 run_test "$tested_script rbd $data_dir/crush-tree-plain.json"
 
+(( ntests++ )) && echo_test_name "Test on manipulated json file (Skip pool existence test)"
+run_test "$tested_script rbd $data_dir/crush-tree-plain.json -f"
+
 (( ntests++ )) && echo_test_name "Test on original json file"
 run_test "$tested_script rbd $data_dir/crush-tree-plain.json.original"
 

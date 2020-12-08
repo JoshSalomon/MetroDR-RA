@@ -23,14 +23,15 @@ function usage() {
     #
     echo 
     if [[ $debug == 0 ]]; then
-       echo "Usage: $(basename "$0") pool_name"
+       echo "Usage: $(basename "$0") <pool_name>"
     else
-       echo "Usage: $(basename "$0") {-v} {-x} {-d}"
+       echo "Usage: $(basename "$0") {debug} <pool_name> {-v} {-x} {-d}"
     fi
     echo
     echo "Check if pool_name has read affinity (all its primary OSDs are from the same datacenter"
     echo "or availability zone)"
     if [[ $debug > 0 ]]; then
+        echo "  debug      Enable the debug options below"
         echo "  -v  Debug: Turn verbosity on"
         echo "  -x  Debug: Print command traces before executing command"
         echo "  -d  Debug: Print shell input lines as they are read"
@@ -79,7 +80,7 @@ fi
 
 if [[ -z "$1" ]]; then
     echo ""
-    echo_error "Missing mandatory parameter"
+    echo_error "Missing mandatory parameter <pool_name>p"
     usage
 fi
 
@@ -114,6 +115,7 @@ if [[ $debug > 0 ]]; then
                 ;;
         esac
     done
+    shift $((OPTIND-1))
 fi
 
 ###
@@ -158,7 +160,7 @@ pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $
 # Get the list of primary OSDs for this pool, string of OSD IDs separated by ':' sign
 #
 
-primaries=$(ceph pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ split($3, a, "[\\[\\],]", sep); print  a[2]}')
+primaries=$(ceph pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 ')
 #
 # Create a list with a single copy of each primary so the test is much faster. The primary list 
 # separatoe is colon ':'. This is broken into 2 lines since for some reason the sed in the second 

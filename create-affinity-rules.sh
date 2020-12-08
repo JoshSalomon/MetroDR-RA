@@ -1,5 +1,10 @@
 #!/bin/bash
 
+##
+#TODO:
+# 1. Add option to create a pool for specific OSD class (hdd/ssd)
+#
+##
 base_dir=$(dirname "$0")
 data_dir=$base_dir/data
 
