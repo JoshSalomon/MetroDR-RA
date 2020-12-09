@@ -164,7 +164,8 @@ pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $
 # Get the list of primary OSDs for this pool, string of OSD IDs separated by ':' sign
 #
 
-primaries=$(ceph pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 }')
+##primaries=$(ceph pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 }')
+primaries=$(ceph pg dump pgs_brief 2>/dev/null  | awk "/^$pool_num./ {print  \$4 }")
 #
 # Create a list with a single copy of each primary so the test is much faster. The primary list 
 # separatoe is colon ':'. This is broken into 2 lines since for some reason the sed in the second 

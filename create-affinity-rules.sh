@@ -33,7 +33,8 @@ function get_max_rule()
     #TODO: add here the ceph osd crush rule dump command - 'ceph osd crush rule dump | grep "rule_id"
     # it is replaces with a cat command for simplicity and tests
        
-    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
+##    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
+    ceph osd crush rule dump |  awk 'BEGIN {max=-1000} /rule_id/ {gsub(",",""); if ($2 > max) {max=$2;} } END {print max}'
 }
 
 function usage() {
