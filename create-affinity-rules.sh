@@ -29,10 +29,6 @@ function get_max_rule()
     # to not exist
     #
     
-    ###
-    #TODO: add here the ceph osd crush rule dump command - 'ceph osd crush rule dump | grep "rule_id"
-    # it is replaces with a cat command for simplicity and tests
-       
 ##    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
     ceph osd crush rule dump |  awk 'BEGIN {max=-1000} /rule_id/ {gsub(",",""); if ($2 > max) {max=$2;} } END {print max}'
 }
@@ -40,13 +36,7 @@ function get_max_rule()
 function usage() {
     #
     # This function always exits, it never returns
-    ###Del if no parameters are passed an empty line is printed before the massage, if any 
-    ###Del parameter is passed, the new line is skipped.
     #
-###Del    if [ $# -eq 0 ]
-###Del    then
-###Del        echo
-###Del    fi
     echo 
     if [[ $debug == 0 ]]; then
         echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class}"
@@ -173,6 +163,19 @@ else
             echo_error "Failed writing $ofile, error code is $?"
             error=1
         fi
+	    rule_name=$(cat $ofile | awk ' /^rule / { print $2 }')
+        if [[ -z $rule_name ]]; then
+            echo_error "Could not find rule name in file $ofile"
+            exit 1
+        fi
+        check_rule_by_name $rule_name
+        rule_exists=$?
+        (($verbose == 1)) && echo_dbg "Checking for existence of rule $rule_name $rule_exists" 
+        if [[ $rule_exists -eq 1 ]]; then
+            echo_error "Rule $rule_name already exists, consider using -x to add rule name suffix"
+            usage
+        fi
+
     done
 fi
 

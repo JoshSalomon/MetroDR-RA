@@ -5,10 +5,15 @@
 # for testing later whether a pool has read affinity (in addition to the type of the failure domain
 # level).
 #
+
+crush_tree_initialized=0
 declare -A crush_parents_by_id
 declare -A crush_node_type_by_id
 declare -A crush_node_name_by_id
 declare -A node_indices_by_id
+
+rules_initialized=0
+declare -A rules_by_name 
 
 failure_domain_type=""
 failure_domain_num=0
@@ -24,6 +29,10 @@ reset_text="\e[0m"
 
 function echo_error() {
     echo -e "$red_text*Error*: $reset_text$1"
+}
+
+function echo_dbg() {
+    echo -e "$blue_text$1$reset_text"
 }
 
 function find_failure_domains()
@@ -63,34 +72,66 @@ function find_failure_domains()
     done
 }
 
+function build_rules_by_name() {
+    if [[ $rules_initialized -eq 0 ]]; then 
+        local rules=$(ceph osd crush rule ls)
+        (($verbose == 1)) && echo_dbg "in build rules by name" 
+        for rn in ${rules[@]}; do 
+            rules_by_name[$rn]=1
+            (($verbose == 1)) && echo_dbg "Added $rn to rules name hash"
+        done
+        rules_initialized=1
+    fi
+}
+
+function check_rule_by_name() {
+    ##
+    # Check if a rule with the name $1 exists in ceph
+    #
+    # WARNING:
+    #   This function should NOT be called in comamnd substitution "$(check_rule_by_name)" rather it shoudl be called as 
+    #   check_rule_by_name
+    #   result = $?
+    ##
+    if [[ -z $1 ]]; then
+        echo_error "Internal bug: No argument passed to ${FUNCNAME}()"
+        exit 1
+    fi
+    build_rules_by_name
+    if [[ ${rules_by_name[$1]} -eq 1 ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
 function build_crush_tree() {
     ## 
     # This function builds the crush tree information in the 3 arrays
     # crush_parents_by_id, crush_node_type_by_id and crush_node_name_by_id
     ##
-    local num_nodes=$(echo $1 | jq ".nodes | length")
-##    echo " found $num_nodes nodes in the crush tree"
+    if [[ $crush_tree_initialized -eq 0 ]]; then
+        local num_nodes=$(echo $1 | jq ".nodes | length")
 
-    for  (( i = 0 ; i < $num_nodes ; i++ ))
-    do
-        local node_info=$(echo $1 | jq .nodes[$i])
-##        echo "====="
-##        echo $node_info
-##        echo "-----"
-        local n_children=$(echo $node_info | jq ".children | length")
-        local id=$(echo $node_info | jq .id)
-        local type=$(echo $node_info | jq .type | sed 's/"//g')
-        local name=$(echo $node_info | jq .name | sed 's/"//g')
-        ##echo "node $id: name is $name, type is $type, index is $i"
-        crush_node_name_by_id[$id]=$name
-        crush_node_type_by_id[$id]=$type
-        node_indices_by_id[$id]=$i
-        for (( child = 0 ; child < $n_children ; child++ ))
+        for  (( i = 0 ; i < $num_nodes ; i++ ))
         do
-            local ch_id=$(echo $node_info | jq .children[$child])
- ##           echo "Parent of $ch_id is $id"  
-            crush_parents_by_id[$ch_id]=$id
-        done
-    done    
+            local node_info=$(echo $1 | jq .nodes[$i])
+            local n_children=$(echo $node_info | jq ".children | length")
+            local id=$(echo $node_info | jq .id)
+            local type=$(echo $node_info | jq .type | sed 's/"//g')
+            local name=$(echo $node_info | jq .name | sed 's/"//g')
+            ##echo "node $id: name is $name, type is $type, index is $i"
+            crush_node_name_by_id[$id]=$name
+            crush_node_type_by_id[$id]=$type
+            node_indices_by_id[$id]=$i
+            for (( child = 0 ; child < $n_children ; child++ ))
+            do
+                local ch_id=$(echo $node_info | jq .children[$child])
+ ##               echo "Parent of $ch_id is $id"  
+                crush_parents_by_id[$ch_id]=$id
+            done
+        done    
+        $crush_tree_initialized=1
+    fi
 }
 
