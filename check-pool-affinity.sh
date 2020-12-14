@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# vim: ts=4 sw=4
+
 #####
 # Note to reader:
 # This script should have been written in Python. In order to make it more portable and not to mess
@@ -125,7 +127,7 @@ fi
 ###
 # Check that the pool exists
 #
-ceph osd pool get $pool_name size &> /dev/null
+$CEPH osd pool get $pool_name size &> /dev/null
 if [[ $? != 0 ]]; then
     echo
     echo_error "Pool $pool_name does not exist"
@@ -135,7 +137,7 @@ fi
 echo " == Checking affinity for pool $pool_name"
 
 if [[ "$input_file" == "" ]]; then
-    crush_tree_json=$(ceph osd crush tree -f json)
+    crush_tree_json=$($CEPH osd crush tree -f json)
 else
     echo " == debug mode - reading crush info from file $input_file"
     if [ -r $input_file ]; then
@@ -156,7 +158,7 @@ find_failure_domains $crush_tree_json
 ##    echo "Node $i, name ${crush_node_name_by_id[$i]}, type ${crush_node_type_by_id[$i]}, parent ${crush_parents_by_id[$i]}" 
 ##done
 
-pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $2 == PN) { print $4 } }')
+pool_num=$($CEPH osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $2 == PN) { print $4 } }')
 
 (($verbose == 1)) && echo " == Pool num = $pool_num"
 
@@ -164,8 +166,8 @@ pool_num=$(ceph osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $
 # Get the list of primary OSDs for this pool, string of OSD IDs separated by ':' sign
 #
 
-##primaries=$(ceph pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 }')
-primaries=$(ceph pg dump pgs_brief 2>/dev/null  | awk "/^$pool_num./ {print  \$4 }")
+##primaries=$($CEPH pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 }')
+primaries=$($CEPH pg dump pgs_brief 2>/dev/null  | awk "/^$pool_num./ {print  \$4 }")
 #
 # Create a list with a single copy of each primary so the test is much faster. The primary list 
 # separatoe is colon ':'. This is broken into 2 lines since for some reason the sed in the second 

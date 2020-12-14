@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# vim: set ts=4 sw=4 smartindent autoindent:
+
 ##
 #TODO:
 # 1. Add option to create a pool for specific OSD class (hdd/ssd)
@@ -14,10 +16,11 @@ verbose=0
 template_dir=data
 template_3azs=3az-template-rule.txt
 template_2azs=2az-template-rule.txt
-rule_suffix=-affinity.rule
+rule_file_suffix=-affinity.rule
+rule_suffix=""
 
 debug=0
-opts="1:2:3:h"
+opts="1:2:3:s:h"
 dbg_opts="vxd"
 base_dir="."
 
@@ -30,7 +33,7 @@ function get_max_rule()
     #
     
 ##    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
-    ceph osd crush rule dump |  awk 'BEGIN {max=-1000} /rule_id/ {gsub(",",""); if ($2 > max) {max=$2;} } END {print max}'
+    $CEPH osd crush rule dump |  awk 'BEGIN {max=-1000} /rule_id/ {gsub(",",""); if ($2 > max) {max=$2;} } END {print max}'
 }
 
 function usage() {
@@ -39,13 +42,14 @@ function usage() {
     #
     echo 
     if [[ $debug == 0 ]]; then
-        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class}"
+        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix}"
     else
-        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-v} {-x} {-d}"
+        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-v} {-x} {-d}"
     fi
     echo "  -1  Name of first az class (for the crush rules)"
     echo "  -2  Name of second az class (for the crush rules)"
     echo "  -3  Name of thirs az class (for the crush rules) - optional"
+	echo "  -s  Add suffix to the generated rule names (in case your cluster already has rules with the generated names)"
     if [[ $debug > 0 ]]; then
         echo "  -v  Debug: Turn verbosity on"
         echo "  -x  Debug: Print command traces before executing command"
@@ -85,7 +89,7 @@ function create_3azs_rule() {
     local az1=$2
     local az2=$3
     local az3=$4
-    cat $base_dir/$template_dir/$template_3azs | sed "s/<<AZ1>>/$az1/" | sed "s/<<AZ2>>/$az2/" | sed "s/<<AZ3>>/$az3/" | sed "s/<<ID>>/$id/"
+    cat $base_dir/$template_dir/$template_3azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<AZ3>>/$az3/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/"
     
 }
 
@@ -118,6 +122,10 @@ while getopts $opts o; do
             verbose=1
             echo "Running in verbose mode" 
             ;;
+		s)
+			rule_suffix=${OPTARG}
+			(($verbose == 1)) && echo "Rule name suffix="$rule_suffix
+			;;
         x)
             set -x
             echo "Expansion mode on"
@@ -155,7 +163,7 @@ else
         ((max_rule++))
         i2=$(( (i+1) % 3 ))
         i3=$(( (i+2) % 3 ))
-        ofile=$base_dir/${azs[$i]}$rule_suffix
+        ofile=$base_dir/${azs[$i]}$rule_file_suffix
         create_3azs_rule $max_rule ${azs[$i]} ${azs[$i2]} ${azs[$i3]} > $ofile
         if [[ $? == 0 ]]; then
             echo "Rule file $ofile created successfully." 

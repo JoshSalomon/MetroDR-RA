@@ -1,4 +1,6 @@
 
+# vim: set ts=4 sw=4 smartindent autoindent:
+
 #
 # The following 4 arrays represent a single array with structure elements that we use for holding
 # crush bucket information (parent, node name, node type, node index) - this is enough information
@@ -35,6 +37,21 @@ function echo_dbg() {
     echo -e "$blue_text$1$reset_text"
 }
 
+##
+# Cluster control of the scripts via CEPH_CLUSTER_NAME env variable
+##
+CEPH=ceph
+
+if [[ -n $CEPH_CLUSTER_NAME ]]; then
+	CEPH="ceph --cluster $CEPH_CLUSTER_NAME"
+fi
+$CEPH -s >/dev/null 2>&1
+if [[ $? -ne 0 ]]; then
+	echo_error "Could not connect to cluste $CEPH_CLUSTER_NAME (command $CEPH -s failed)"
+	exit 1
+fi
+
+#
 function find_failure_domains()
 {
     # 
@@ -44,7 +61,7 @@ function find_failure_domains()
     # "ceph osd crush tree -f json"
     #
     if [ -z "$1" ]; then
-        echo_error "No paremeter passed to $0"
+        echo_error "Internal problem: No paremeter passed to ${FUNCNAME}()"
         exit 0
     fi
     local node_idx=0
@@ -74,7 +91,7 @@ function find_failure_domains()
 
 function build_rules_by_name() {
     if [[ $rules_initialized -eq 0 ]]; then 
-        local rules=$(ceph osd crush rule ls)
+        local rules=$($CEPH osd crush rule ls)
         (($verbose == 1)) && echo_dbg "in build rules by name" 
         for rn in ${rules[@]}; do 
             rules_by_name[$rn]=1
@@ -86,7 +103,7 @@ function build_rules_by_name() {
 
 function check_rule_by_name() {
     ##
-    # Check if a rule with the name $1 exists in ceph
+    # Check if a rule with the name $1 exists in $CEPH
     #
     # WARNING:
     #   This function should NOT be called in comamnd substitution "$(check_rule_by_name)" rather it shoudl be called as 
@@ -94,7 +111,7 @@ function check_rule_by_name() {
     #   result = $?
     ##
     if [[ -z $1 ]]; then
-        echo_error "Internal bug: No argument passed to ${FUNCNAME}()"
+        echo_error "Internal problem: No argument passed to ${FUNCNAME}()"
         exit 1
     fi
     build_rules_by_name
@@ -131,7 +148,28 @@ function build_crush_tree() {
                 crush_parents_by_id[$ch_id]=$id
             done
         done    
-        $crush_tree_initialized=1
+        crush_tree_initialized=1
     fi
+}
+
+function assert() {     #  If condition false,
+                        #+ exit from script with error message.
+  	E_PARAM_ERR=98
+  	E_ASSERT_FAILED=99
+  	if [[ -z "$2" ]]; then    # Not enough parameters passed.
+ 	   return $E_PARAM_ERR    # No damage done.
+	fi
+
+	lineno=$2
+
+	(( $verbose == 1 )) && echo_dbg "Asserting $1"
+  	if [ ! $1 ]; then
+    	echo_error "Assertion failed:  \"$1\""
+    	echo "File \"$0\", line $lineno"
+    	exit $E_ASSERT_FAILED
+  	# else
+  	#   return
+  	#   and continue executing script.
+  	fi
 }
 

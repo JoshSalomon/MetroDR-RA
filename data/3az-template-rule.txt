@@ -1,4 +1,4 @@
-rule replicated_affinity_3_<<AZ1>> {
+rule replicated_affinity3_<<AZ1>><<SFX>> {
     id <<ID>>
 	type replicated   
 	min_size 1
