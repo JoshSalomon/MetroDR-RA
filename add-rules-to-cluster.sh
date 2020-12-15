@@ -111,31 +111,48 @@ function get_rule_data() {
 
 function check_and_append_rule() {
 	##
-	# Check that the rule in the rule file is a new rule (meaning the rule name or id are noe alreasy used
+	# Check that the rule in the rule file is a new rule (meaning the rule name or id are not alreasy used
 	# in the ceph cluster). Additionally this rule increment the counter for valid rules (processed_rules) or for 
 	# duplicate rules (warnings)
 	# This function returns:
 	#     0 - If the file was processed (appended to the rules text file)
 	#	  1 - The rule in the file has id of an existing rule 
-	#	  2 - The rule in the file has name of an existing rule 
+	#	  2 - The rule in the file has name of an existing rule
+	#     3 - The file does not contain a vaild rule
+	#     4 - The file contains more than one rule - this is not supported in this verison of
+	#         the script.
+	#
+	# NOTE:
+	#    At this point the script does not support files with more than one rule in them and 
+	#    rejects such files.
 	##
 	if [[ -z $1 ]]; then
 		echo_error "Internal problem: No parameters passed to ${FUNCNAME}()"
 		exit 1
 	fi
+	local rname=$(cat $1 | awk ' /^rule\s/ {print $2}')
+	local n_rules=$(echo $rname | wc -w)
+	if [[ $n_rules == 0 ]]; then
+		echo " ** No rules found in file $1, skipping the file"
+		return 3
+	elif [[ $n_rules > 1 ]]; then
+		echo " ** File $1 contain more than one rule, this is currently not supported by $0."
+		echo " ** Consider splitting the file, or removing some of the rules."
+		echo " ** skipping file $1"
+		return 4
+	fi
+	find_value_in_array $rname "${rule_names[@]}"
+	if [[ $? == 1 ]]; then
+		echo " ** The ceph cluster already has a rule with name $rname"
+		echo " ** Skipping file $1"
+		return 2
+	fi
 	local rid=$(cat $1 | awk ' /\sid\s/ {print $2}')
 	find_value_in_array $rid "${rule_ids[@]}"
 	if [[ $? == 1 ]]; then
-		echo "The ceph cluster already has a rule with id $rid"
-		echo "Skipping file $1"
+		echo " ** The ceph cluster already has a rule with id $rid"
+		echo " ** Skipping file $1"
 		return 1 
-	fi
-	local rname=$(cat $1 | awk ' /^rule\s/ {print $2}')
-	find_value_in_array $rname "${rule_names[@]}"
-	if [[ $? == 1 ]]; then
-		echo "The ceph cluster already has a rule with name $rname"
-		echo "Skipping file $1"
-		return 2
 	fi
 	if [[ $first_time == 0 ]]; then
 		echo "" >>  $crush_text_file
@@ -168,6 +185,10 @@ fi
 decompile_crush
 get_rule_data
 
+##
+# Loop over all the files
+##
+
 first_time=0
 warnings=0
 processed_rules=0
@@ -183,21 +204,24 @@ done
 
 (( $verbose == 1 )) && (( $processed_rules > 0 )) && echo_dbg "Updated crush text file is ready in $crush_text_file"
 
+##
+# If we have warning - ask the user how to continue
+##
 if [[ $processed_rules == 0 ]]; then
-	echo "No rules were added to the cluster, exiting"
+	echo " ** No rules were added to the cluster, exiting"
 	cleanup
 	exit 0
 else
 	if [[ $warnings > 0 ]]; then
 		while true; do
-			read -n 1 -p "Some rules were not applied to the cluster. Continue?[Y/n]" resp
+			read -n 1 -p " Some rules were not applied to the cluster. Continue?[Y/n]" resp
 			echo	## just add a new line
 			if [[ "$resp" == "n" ]]; then
-				echo "Exiting"
+				echo " Exiting"
 				cleanup
 				exit 0
 			elif [[ "$resp" != "Y" ]]; then
-				echo "Illegal choice $resp, please retry"
+				echo " Illegal choice $resp, please retry"
 			else
 				break
 			fi
@@ -205,9 +229,12 @@ else
 	fi
 fi
 
+##
+# Finalize the work 
+##
 compile_and_set_crush
 
 if [[ $verbose == 0 ]]; then
-	echo "Command ended successfully, cleaning temporary files"
+	echo " Command ended successfully, cleaning temporary files"
 	cleanup
 fi
