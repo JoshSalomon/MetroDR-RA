@@ -31,7 +31,7 @@ function usage() {
 
 function cleanup() {
 	##
-	# Rempove the temp files
+	# Remove the temp files
 	##
 	rm -f $crush_text_file
 	rm -f $crush_compiled_file
@@ -116,8 +116,8 @@ function check_and_append_rule() {
 	# duplicate rules (warnings)
 	# This function returns:
 	#     0 - If the file was processed (appended to the rules text file)
-	#	  1 - The rule in the file has id of an existing rule 
-	#	  2 - The rule in the file has name of an existing rule
+	#     1 - The rule in the file has id of an existing rule 
+	#     2 - The rule in the file has name of an existing rule
 	#     3 - The file does not contain a vaild rule
 	#     4 - The file contains more than one rule - this is not supported in this verison of
 	#         the script.
