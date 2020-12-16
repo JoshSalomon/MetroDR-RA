@@ -89,8 +89,42 @@ function create_3azs_rule() {
     local az1=$2
     local az2=$3
     local az3=$4
+	assert " -n $az1" $LINENO silent
+	assert " -n $az2" $LINENO silent
+	assert " -n $az3" $LINENO silent
     cat $base_dir/$template_dir/$template_3azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<AZ3>>/$az3/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/"
     
+}
+
+function create_2azs_rule() {
+    local id=$1
+    local az1=$2
+    local az2=$3
+	assert " -n $az1" $LINENO silent
+	assert " -n $az2" $LINENO silent
+    cat $base_dir/$template_dir/$template_2azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/"
+    
+}
+
+function check_file() {
+	if [[ -z $1 ]]; then
+		echo_error "Internal problem: No parameters passed to ${FUNCNAME}()"
+		exit 1
+	fi
+	local file=$1
+	local rule_name=$(cat $file | awk ' /^rule / { print $2 }')
+	if [[ -z $rule_name ]]; then
+		echo_error "Could not find rule name in file $file"
+		exit 1
+	fi
+	check_rule_by_name $rule_name
+	local rule_exists=$?
+	(($verbose == 1)) && echo_dbg "Checking for existence of rule $rule_name $rule_exists" 
+	if [[ $rule_exists -eq 1 ]]; then
+		echo_error "Rule $rule_name already exists, consider using -s to add rule name suffix"
+		usage
+	fi
+
 }
 
 ###
@@ -154,7 +188,22 @@ max_rule=$(get_max_rule)
 error=0
 
 if [[ "$az3" == "" ]]; then
-    echo_error "==> 2 AZs - not implemented yet"
+    (($verbose == 1)) && echo "==> 2 AZs"
+    azs=($az1 $az2)
+    for i in 0 1;
+    do
+        ((max_rule++))
+        i2=$(( (1-i) ))
+        ofile=$base_dir/${azs[$i]}$rule_file_suffix
+        create_2azs_rule $max_rule ${azs[$i]} ${azs[$i2]}  > $ofile
+        if [[ $? == 0 ]]; then
+            echo "Rule file $ofile created successfully." 
+        else
+            echo_error "Failed writing $ofile, error code is $?"
+            error=1
+        fi
+		check_file $ofile
+    done
 else
     (($verbose == 1)) && echo "==> 3 AZs"
     azs=($az1 $az2 $az3)
@@ -171,19 +220,7 @@ else
             echo_error "Failed writing $ofile, error code is $?"
             error=1
         fi
-	    rule_name=$(cat $ofile | awk ' /^rule / { print $2 }')
-        if [[ -z $rule_name ]]; then
-            echo_error "Could not find rule name in file $ofile"
-            exit 1
-        fi
-        check_rule_by_name $rule_name
-        rule_exists=$?
-        (($verbose == 1)) && echo_dbg "Checking for existence of rule $rule_name $rule_exists" 
-        if [[ $rule_exists -eq 1 ]]; then
-            echo_error "Rule $rule_name already exists, consider using -x to add rule name suffix"
-            usage
-        fi
-
+		check_file $ofile
     done
 fi
 

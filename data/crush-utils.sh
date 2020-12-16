@@ -154,6 +154,7 @@ function build_crush_tree() {
 
 function assert() {     #  If condition false,
                         #+ exit from script with error message.
+						#+ if 3rd parameter existsm the echo_dbg messages are supressed.
   	E_PARAM_ERR=98
   	E_ASSERT_FAILED=99
   	if [[ -z "$2" ]]; then    # Not enough parameters passed.
@@ -162,7 +163,10 @@ function assert() {     #  If condition false,
 
 	lineno=$2
 
-	(( $verbose == 1 )) && echo_dbg "Asserting $1"
+	if [[ -z "$3" ]]; then  ## value in $3 means silent mode
+		(( $verbose == 1 )) && echo_dbg "Asserting $1"
+	fi
+
   	if [ ! $1 ]; then
     	echo_error "Assertion failed:  \"$1\""
     	echo "File \"$0\", line $lineno"
