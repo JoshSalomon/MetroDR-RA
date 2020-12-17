@@ -4,10 +4,10 @@ rule replicated_affinity2_<<AZ1>><<SFX>> {
 	min_size 1
 	max_size 10
 	step take <<AZ1>>
-	step chooseleaf firstn 2 type host
+	step chooseleaf firstn 2 type <<TYP>>
 	step emit
 	step take <<AZ2>>
-	step chooseleaf firstn 2 type host
+	step chooseleaf firstn 2 type <<TYP>>
 	step emit
 }
 

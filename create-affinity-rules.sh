@@ -18,10 +18,12 @@ template_3azs=3az-template-rule.txt
 template_2azs=2az-template-rule.txt
 rule_file_suffix=-affinity.rule
 rule_suffix=""
+choseleaf_type=""
+json_file=""
 
 debug=0
-opts="1:2:3:s:h"
-dbg_opts="vxd"
+opts="1:2:3:s:t:h"
+dbg_opts="vxdj:"
 base_dir="."
 
 function get_max_rule()
@@ -42,14 +44,15 @@ function usage() {
     #
     echo 
     if [[ $debug == 0 ]]; then
-        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix}"
+        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-chose-type}"
     else
-        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-v} {-x} {-d}"
+        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-chose-type} {-v} {-x} {-d}"
     fi
     echo "  -1  Name of first az class (for the crush rules)"
     echo "  -2  Name of second az class (for the crush rules)"
     echo "  -3  Name of thirs az class (for the crush rules) - optional"
 	echo "  -s  Add suffix to the generated rule names (in case your cluster already has rules with the generated names)"
+	echo "  -t  Change the type of the choseleaf step. Default is host and the script should manage this correctly"
     if [[ $debug > 0 ]]; then
         echo "  -v  Debug: Turn verbosity on"
         echo "  -x  Debug: Print command traces before executing command"
@@ -92,7 +95,7 @@ function create_3azs_rule() {
 	assert " -n $az1" $LINENO silent
 	assert " -n $az2" $LINENO silent
 	assert " -n $az3" $LINENO silent
-    cat $base_dir/$template_dir/$template_3azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<AZ3>>/$az3/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/"
+    cat $base_dir/$template_dir/$template_3azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<AZ3>>/$az3/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/;s/<<TYP>>/$choseleaf_type/"
     
 }
 
@@ -102,7 +105,7 @@ function create_2azs_rule() {
     local az2=$3
 	assert " -n $az1" $LINENO silent
 	assert " -n $az2" $LINENO silent
-    cat $base_dir/$template_dir/$template_2azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/"
+    cat $base_dir/$template_dir/$template_2azs | sed -e "s/<<AZ1>>/$az1/;s/<<AZ2>>/$az2/;s/<<ID>>/$id/;s/<<SFX>>/$rule_suffix/;s/<<TYP>>/$choseleaf_type/"
     
 }
 
@@ -160,6 +163,14 @@ while getopts $opts o; do
 			rule_suffix=${OPTARG}
 			(($verbose == 1)) && echo "Rule name suffix="$rule_suffix
 			;;
+		t)
+			choseleaf_type=${OPTARG}
+			(($verbose == 1)) && echo "Choose leaf type="$choseleaf_type
+			;;
+		j)
+			json_file=${OPTARG}
+			(($verbose == 1)) && echo "Reading CRUSH tree from="$json_file
+			;;
         x)
             set -x
             echo "Expansion mode on"
@@ -183,9 +194,27 @@ check_params
 (($verbose == 1)) && echo "*** Parsed command line ***"
 
 max_rule=$(get_max_rule)
-(($verbose == 1)) && echo "max_rule="$max_rule
+(( $verbose == 1)) && echo "max_rule="$max_rule
 
 error=0
+
+if [[ -z $choseleaf_type ]]; then
+	##
+	# If the user set this parameter, don't change it
+	##
+	json_str=""
+	if [[ ! -z $json_file ]]; then
+		json_str=$(cat $json_file)
+	fi
+	find_failure_domains $json_str
+	if [[ "$failure_domain_type" == "host" ]]; then
+		choseleaf_type="osd"
+	else
+		choseleaf_type="host"
+	fi
+fi
+
+(( $verbose == 1 )) && echo "Choseleaf type="$choseleaf_type
 
 if [[ "$az3" == "" ]]; then
     (($verbose == 1)) && echo "==> 2 AZs"

@@ -60,23 +60,26 @@ function find_failure_domains()
     # It gets one input parameter which is the json file which is the output of the command
     # "ceph osd crush tree -f json"
     #
+	local json=""
     if [ -z "$1" ]; then
-        echo_error "Internal problem: No paremeter passed to ${FUNCNAME}()"
-        exit 0
+    	json=$($CEPH osd crush tree -f json)
+	else 
+		json=$1
     fi
+	build_crush_tree $json
     local node_idx=0
     while true; do
-        local node_info=$(echo $1 | jq .nodes[$node_idx])
+        local node_info=$(echo $json | jq .nodes[$node_idx])
         local n_children=$(echo $node_info | jq ".children | length")
         ## echo "node index $node_idx, nChildren $n_children"
-        first_child=$(echo $1 | jq .nodes[$node_idx].children[0])
+        first_child=$(echo $json | jq .nodes[$node_idx].children[0])
         if [ $n_children -gt 1 ]; then
             ## echo "node $node_id - below is failure domain, such as $first_child"
             failure_domain_type=${crush_node_type_by_id[$first_child]}
             ## echo "Failure domain type is $failure_domain_type"
             ##failure_domain_num=$n_children
             ##for (( i = 0 ; i < )); do
-            ##    local cur_child_id=$(echo $1 | jq .nodes[$node_idx].children[$i])
+            ##    local cur_child_id=$(echo $json | jq .nodes[$node_idx].children[$i])
             ##    failure_domains[${crush_node_name_by_id[$cur_child_id]}]="1"
             ##done
             break
@@ -128,11 +131,18 @@ function build_crush_tree() {
     # crush_parents_by_id, crush_node_type_by_id and crush_node_name_by_id
     ##
     if [[ $crush_tree_initialized -eq 0 ]]; then
-        local num_nodes=$(echo $1 | jq ".nodes | length")
+		(( $verbose == 1 )) && echo_dbg "*** Building crush tree ***"
+		local json=""
+		if [[ -z "$1" ]]; then
+			json=$($CEPH osd crush tree -f json)
+		else 
+			json=$1
+		fi
+        local num_nodes=$(echo $json | jq ".nodes | length")
 
         for  (( i = 0 ; i < $num_nodes ; i++ ))
         do
-            local node_info=$(echo $1 | jq .nodes[$i])
+            local node_info=$(echo $json | jq .nodes[$i])
             local n_children=$(echo $node_info | jq ".children | length")
             local id=$(echo $node_info | jq .id)
             local type=$(echo $node_info | jq .type | sed 's/"//g')
@@ -154,7 +164,7 @@ function build_crush_tree() {
 
 function assert() {     #  If condition false,
                         #+ exit from script with error message.
-						#+ if 3rd parameter existsm the echo_dbg messages are supressed.
+						#+ If 3rd parameter exists, debug messages are supressed
   	E_PARAM_ERR=98
   	E_ASSERT_FAILED=99
   	if [[ -z "$2" ]]; then    # Not enough parameters passed.
@@ -163,7 +173,7 @@ function assert() {     #  If condition false,
 
 	lineno=$2
 
-	if [[ -z "$3" ]]; then  ## value in $3 means silent mode
+	if [[ -z $3 ]]; then  ## if this parametr exists supress debug messages
 		(( $verbose == 1 )) && echo_dbg "Asserting $1"
 	fi
 
