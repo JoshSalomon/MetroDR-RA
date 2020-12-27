@@ -51,26 +51,41 @@ run_test "$tested_script NonExistingPool"
 (( ntests++ )) && echo_test_name "Simple tests on rbd"
 run_test "$tested_script rbd"
 
-(( ntests++ )) && echo_test_name "Test on manipulated json file"
-run_test "$tested_script rbd $data_dir/crush-tree-plain.json"
-
-(( ntests++ )) && echo_test_name "Test on manipulated json file (Skip pool existence test)"
-run_test "$tested_script rbd $data_dir/crush-tree-plain.json -f"
-
-(( ntests++ )) && echo_test_name "Test on original json file"
-run_test "$tested_script rbd $data_dir/crush-tree-plain.json.original"
-
 (( ntests++ )) && echo_test_name "Test on non exiting json file"
 run_test "$tested_script rbd NonExistingFile"
 
-if [[ "$USER" != "root" ]]; then
-    (( ntests++ )) && echo_test_name "Test on non readable json file (applicable to non-root users only)"
-    echo ""
-    temp_file=$(mktemp)
-    cp  $data_dir/crush-tree-plain.json $temp_file ; chmod -r $temp_file
-    ls -a $temp_file
-    run_test "$tested_script rbd $temp_file"
-    chmod +r $temp_file ; rm $temp_file
+echo -e "\n*****************************************************************************************************"
+echo -e   "***$blue_text The rest of the tests work only when the json file fits the existing ceph system.             $reset_text***"
+echo -e   "***$blue_text You can enable them (by editing this script) once you build the json file out of the commnad: $reset_text***"
+echo -e   "*** ==> ceph osd crush tree -f json <==                                                           ***"
+echo -e   "*** This is required only when you want to test against a crush tree structure which differs      ***"
+echo -e   "*** from your live system configuration.                                                          ***"
+echo -e   "*****************************************************************************************************\n"
+##
+#TODO:
+# change the following line once you have a good json file, set skip_file_tests to 0
+##
+skip_file_tests=1
+
+if [[ $skip_file_tests == 0 ]]; then
+	(( ntests++ )) && echo_test_name "Test on manipulated json file"
+	run_test "$tested_script rbd $data_dir/crush-tree-plain.json"
+
+	(( ntests++ )) && echo_test_name "Test on manipulated json file (Skip pool existence test)"
+	run_test "$tested_script rbd $data_dir/crush-tree-plain.json -f"
+
+	(( ntests++ )) && echo_test_name "Test on original json file"
+	run_test "$tested_script rbd $data_dir/crush-tree-plain.json.original"
+
+	if [[ "$USER" != "root" ]]; then
+    	(( ntests++ )) && echo_test_name "Test on non readable json file (applicable to non-root users only)"
+	    echo ""
+    	temp_file=$(mktemp)
+	    cp  $data_dir/crush-tree-plain.json $temp_file ; chmod -r $temp_file
+    	ls -a $temp_file
+	    run_test "$tested_script rbd $temp_file"
+    	chmod +r $temp_file ; rm $temp_file
+	fi
 fi
 
 echo -e "\nCompleted $ntests tests."

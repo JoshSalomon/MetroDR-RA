@@ -138,6 +138,8 @@ function build_crush_tree() {
 		else 
 			json=$1
 		fi
+		(( $verbose == 1 )) && echo $json
+
         local num_nodes=$(echo $json | jq ".nodes | length")
 
         for  (( i = 0 ; i < $num_nodes ; i++ ))
@@ -147,7 +149,6 @@ function build_crush_tree() {
             local id=$(echo $node_info | jq .id)
             local type=$(echo $node_info | jq .type | sed 's/"//g')
             local name=$(echo $node_info | jq .name | sed 's/"//g')
-            ##echo "node $id: name is $name, type is $type, index is $i"
             crush_node_name_by_id[$id]=$name
             crush_node_type_by_id[$id]=$type
             node_indices_by_id[$id]=$i
