@@ -44,15 +44,15 @@ function usage() {
     #
     echo 
     if [[ $debug == 0 ]]; then
-        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-chose-type}"
+        echo "Usage: $0 -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-choose-type}"
     else
-        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-chose-type} {-v} {-x} {-d}"
+        echo "Usage: $0 debug -1 az1-class -2 az2-class {-3 az3-class} {-s rule-name-suffix} {-t crush-choose-type} {-v} {-x} {-d}"
     fi
-    echo "  -1  Name of first az class (for the crush rules)"
-    echo "  -2  Name of second az class (for the crush rules)"
-    echo "  -3  Name of thirs az class (for the crush rules) - optional"
+    echo "  -1  Name of the first AZ bucket (for the crush rules)"
+    echo "  -2  Name of the second AZ bucket (for the crush rules)"
+    echo "  -3  Name of the third AZ bucket (for the crush rules) - optional"
 	echo "  -s  Add suffix to the generated rule names (in case your cluster already has rules with the generated names)"
-	echo "  -t  Change the type of the choseleaf step. Default is host and the script should manage this correctly"
+	echo "  -t  Change the type of the chooseleaf step. Default is host and the script should manage this correctly"
     if [[ $debug > 0 ]]; then
         echo "  -v  Debug: Turn verbosity on"
         echo "  -x  Debug: Print command traces before executing command"
