@@ -34,7 +34,6 @@ function get_max_rule()
     # to not exist
     #
     
-##    cat  $base_dir/$template_dir/rule_test.txt | awk '{print $2}' | sed "s/,//" | awk 'BEGIN {max=-1000;} { if ($1 > max) {max=$1;} } END {print max }'
     $CEPH osd crush rule dump |  awk 'BEGIN {max=-1000} /rule_id/ {gsub(",",""); if ($2 > max) {max=$2;} } END {print max}'
 }
 
@@ -257,11 +256,7 @@ if [[ $error == 1 ]]; then
     echo "Errors found, exiting"
     exit 1
 fi
-##
-# step 1 - Set the crush map correctly
-##
-##TODO: how to manage this automatically?
-##
+
 echo "$0 completed successfully."
 
 

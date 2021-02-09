@@ -44,13 +44,15 @@ function usage() {
 
 
 function has_read_affinity() {
-    ##local prim_count=0
+	##
+	# loop over all OSDs in $primaries and check if they belong to the same top level failure domein 
+	# Return:
+	#   0 - No affinity
+    #   1 - Pool has affinity ti a failure domain
+	##
     local failure_domain=""
     IFS=':' read -ra prim_array <<< "$primaries"
     for p in "${prim_array[@]}"; do
-        # Do some processing here
-        ##((prim_count++))
-        ##echo "Checking primary $p"
         local node_id=$p
         while [[ "${crush_node_type_by_id[$node_id]}" != "$failure_domain_type"  ]]; do
             if [[ "${crush_node_type_by_id[$node_id]}" == "root"  ]]; then
@@ -67,11 +69,9 @@ function has_read_affinity() {
             return 0
         fi
 
-        ##echo "Failure domain for $p is ${crush_node_name_by_id[$node_id]}"
     done
     echo -e "\n$green_text =>$reset_text Pool $pool_name has read affinity to failure domain $failure_domain\n";    
     return 1
-    ##echo " == Iterated over $prim_count PGs"
 }
 
 ###

@@ -71,19 +71,15 @@ function find_failure_domains()
     while true; do
         local node_info=$(echo $json | jq .nodes[$node_idx])
         local n_children=$(echo $node_info | jq ".children | length")
-        ## echo "node index $node_idx, nChildren $n_children"
+        
         first_child=$(echo $json | jq .nodes[$node_idx].children[0])
         if [ $n_children -gt 1 ]; then
-            ## echo "node $node_id - below is failure domain, such as $first_child"
             failure_domain_type=${crush_node_type_by_id[$first_child]}
-            ## echo "Failure domain type is $failure_domain_type"
-            ##failure_domain_num=$n_children
-            ##for (( i = 0 ; i < )); do
-            ##    local cur_child_id=$(echo $json | jq .nodes[$node_idx].children[$i])
-            ##    failure_domains[${crush_node_name_by_id[$cur_child_id]}]="1"
-            ##done
             break
         elif [ $n_children -eq 1 ]; then
+			##
+			# Assume this only child is the root of the tree and look for its children in the next iteration
+			##
             node_idx=${node_indices_by_id[$first_child]}
         else 
             echo_error "Did not find a failure domain in tree. Is this a production-like system?"
@@ -109,7 +105,7 @@ function check_rule_by_name() {
     # Check if a rule with the name $1 exists in $CEPH
     #
     # WARNING:
-    #   This function should NOT be called in comamnd substitution "$(check_rule_by_name)" rather it shoudl be called as 
+    #   This function should NOT be called in command substitution "$(check_rule_by_name)" rather it shoudl be called as 
     #   check_rule_by_name
     #   result = $?
     ##
@@ -127,8 +123,8 @@ function check_rule_by_name() {
 
 function build_crush_tree() {
     ## 
-    # This function builds the crush tree information in the 3 arrays
-    # crush_parents_by_id, crush_node_type_by_id and crush_node_name_by_id
+    # This function builds the crush tree information in the 4 arrays
+    # crush_node_name_by_id, crush_node_type_by_id, node_indices_by_id and crush_parents_by_id
     ##
     if [[ $crush_tree_initialized -eq 0 ]]; then
 		(( $verbose == 1 )) && echo_dbg "*** Building crush tree ***"
@@ -155,7 +151,6 @@ function build_crush_tree() {
             for (( child = 0 ; child < $n_children ; child++ ))
             do
                 local ch_id=$(echo $node_info | jq .children[$child])
- ##               echo "Parent of $ch_id is $id"  
                 crush_parents_by_id[$ch_id]=$id
             done
         done    
