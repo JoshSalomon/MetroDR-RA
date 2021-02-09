@@ -153,11 +153,6 @@ find_failure_domains $crush_tree_json
 
 (($verbose == 1)) && echo " == Failure domain type is $failure_domain_type"
 
-##debug
-##for i in "${!crush_node_name_by_id[@]}"; do
-##    echo "Node $i, name ${crush_node_name_by_id[$i]}, type ${crush_node_type_by_id[$i]}, parent ${crush_parents_by_id[$i]}" 
-##done
-
 pool_num=$($CEPH osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && $2 == PN) { print $4 } }')
 
 (($verbose == 1)) && echo " == Pool num = $pool_num"
@@ -166,7 +161,6 @@ pool_num=$($CEPH osd pool stats | awk -v PN="$pool_name" '{ if ($1 == "pool" && 
 # Get the list of primary OSDs for this pool, string of OSD IDs separated by ':' sign
 #
 
-##primaries=$($CEPH pg dump pgs_brief 2>/dev/null | grep "^$pool_num." | awk '{ print  $4 }')
 primaries=$($CEPH pg dump pgs_brief 2>/dev/null  | awk "/^$pool_num./ {print  \$4 }")
 #
 # Create a list with a single copy of each primary so the test is much faster. The primary list 
@@ -175,7 +169,6 @@ primaries=$($CEPH pg dump pgs_brief 2>/dev/null  | awk "/^$pool_num./ {print  \$
 #
 primaries=$(echo $primaries | sed "s/ /\n/g" | sort | uniq )
 primaries=$(echo $primaries | sed "s/ /:/g")
-##echo "short primaries list: $primaries"
 
 has_read_affinity
 
